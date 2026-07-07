@@ -1,0 +1,94 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 34,
+  "spacing": 6,
+  "margin-top": 8,
+  "margin-left": 10,
+  "margin-right": 10,
+  "modules-left": ["sway/workspaces"],
+  "modules-center": ["sway/window"],
+  "modules-right": ["tray", "pulseaudio", "network", "cpu", "memory", "battery", "clock"],
+
+  "sway/workspaces": {
+    "disable-scroll": true,
+    "all-outputs": true,
+    "format": "{name}",
+    "persistent_workspaces": {
+      "1": [],
+      "2": [],
+      "3": [],
+      "4": [],
+      "5": []
+    }
+  },
+
+  "sway/window": {
+    "format": "{title}",
+    "max-length": 80,
+    "tooltip": false
+  },
+
+  "tray": {
+    "spacing": 10
+  },
+
+  "pulseaudio": {
+    "format": "{icon} {volume}%",
+    "format-muted": "󰝟 muted",
+    "format-icons": {
+      "default": ["󰕿", "󰖀", "󰕾"]
+    },
+    "on-click": "pavucontrol"
+  },
+
+  "network": {
+    "format-wifi": "󰖩 {essid} {signalStrength}%",
+    "format-ethernet": "󰈀 connected",
+    "format-disconnected": "󰖪 offline",
+    "tooltip-format-wifi": "{ifname} · {ipaddr}",
+    "tooltip-format-ethernet": "{ifname} · {ipaddr}",
+    "on-click": "python3 /home/ravi/.config/waybar/wifi-popup/wifi_popup.py",
+    "on-click-right": "nm-connection-editor"
+  },
+
+  "cpu": {
+    "format": "󰍛 {usage}%",
+    "tooltip-format": "CPU {usage}% · click for btop",
+    "on-click": "kitty --title btop -e btop"
+  },
+
+  "memory": {
+    "format": "󰘚 {percentage}%",
+    "tooltip-format": "Memory {used:0.1f}G / {total:0.1f}G · click for btop",
+    "on-click": "kitty --title btop -e btop"
+  },
+
+  "battery": {
+    "bat": "BAT0",
+    "adapter": "ADP1",
+    "interval": 30,
+    "states": {
+      "warning": 30,
+      "critical": 15
+    },
+    "format": "{icon} {capacity}%",
+    "format-charging": "󰂄 {capacity}%",
+    "format-plugged": "󰚥 {capacity}%",
+    "format-full": "󰁹 {capacity}%",
+    "format-icons": ["󰂎", "󰁺", "󰁼", "󰁾", "󰂀", "󰁹"],
+    "tooltip-format": "{timeTo} · {capacity}%"
+  },
+
+  "clock": {
+    "format": "󰥔 {:%a %d %b  %H:%M}",
+    "tooltip-format": "<big>{:%A, %d %B %Y}</big>\n<tt>{calendar}</tt>",
+    "on-click": "kitty --title Calendar -e sh -c 'cal -3; printf \"\\nPress Enter to close\"; read _'",
+    "calendar": {
+      "mode": "month",
+      "mode-mon-col": 3,
+      "weeks-pos": "right",
+      "on-scroll": 1
+    }
+  }
+}

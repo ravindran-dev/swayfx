@@ -1,0 +1,10 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" rx="18" fill="#0b1018"/>
+  <rect x="235" y="72" width="490" height="360" rx="22" fill="#111827" stroke="#26354d"/>
+  <circle cx="480" cy="238" r="112" fill="#111827" stroke="#00ffff" stroke-opacity="0.85" stroke-width="10"/>
+  <circle cx="480" cy="238" r="70" fill="#0b1018" stroke="#223044"/>
+  <rect x="418" y="218" width="124" height="92" rx="18" fill="#1b2638" stroke="#8fd3ff"/>
+  <rect x="449" y="184" width="62" height="62" rx="31" stroke="#8fd3ff" stroke-width="12"/>
+  <text x="480" y="385" fill="#e8eef6" font-family="Inter, Arial, sans-serif" font-size="22" text-anchor="middle">Swaylock</text>
+  <text x="480" y="508" fill="#e8eef6" font-family="Inter, Arial, sans-serif" font-size="24" text-anchor="middle">Lock Screen Preview</text>
+</svg>

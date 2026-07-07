@@ -1,0 +1,14 @@
+<svg width="960" height="540" viewBox="0 0 960 540" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="540" rx="18" fill="#0b1018"/>
+  <rect x="270" y="105" width="420" height="118" rx="14" fill="#111827" fill-opacity="0.96" stroke="#00ffff" stroke-width="2"/>
+  <rect x="296" y="132" width="64" height="64" rx="12" fill="#1b2638"/>
+  <rect x="382" y="132" width="230" height="20" rx="8" fill="#e8eef6"/>
+  <rect x="382" y="168" width="260" height="14" rx="7" fill="#95a3b8"/>
+  <rect x="382" y="192" width="190" height="14" rx="7" fill="#95a3b8"/>
+  <rect x="270" y="253" width="420" height="118" rx="14" fill="#111827" fill-opacity="0.96" stroke="#ff006e" stroke-width="2"/>
+  <rect x="296" y="280" width="64" height="64" rx="12" fill="#1b2638"/>
+  <rect x="382" y="280" width="210" height="20" rx="8" fill="#e8eef6"/>
+  <rect x="382" y="316" width="250" height="14" rx="7" fill="#95a3b8"/>
+  <rect x="382" y="340" width="170" height="14" rx="7" fill="#95a3b8"/>
+  <text x="480" y="508" fill="#e8eef6" font-family="Inter, Arial, sans-serif" font-size="24" text-anchor="middle">Mako Notifications Preview</text>
+</svg>

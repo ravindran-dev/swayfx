@@ -1,0 +1,15 @@
+show=drun
+term=kitty
+insensitive=true
+allow_images=true
+show_all=true
+matching=fuzzy
+prompt=Apps
+location=center
+orientation=vertical
+width=460
+height=420
+columns=1
+layer=overlay
+gtk_dark=true
+hide_scroll=true

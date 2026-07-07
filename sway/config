@@ -1,0 +1,168 @@
+### MOD KEY
+set $mod Mod4
+
+### APPS
+set $term kitty
+set $menu wofi --show drun
+
+### WORKSPACE NAMES
+set $ws1 "1"
+set $ws2 "2"
+set $ws3 "3"
+set $ws4 "4"
+set $ws5 "5"
+
+### DIRECTIONS
+# (no vim "h" here - $mod+h is the keybindings help menu; left uses the arrow key)
+set $down j
+set $up k
+set $right l
+
+### LOOK
+default_border pixel 2
+default_floating_border pixel 2
+gaps inner 10
+gaps outer 12
+smart_gaps off
+font pango:JetBrainsMono Nerd Font 10
+
+# Neon border colors
+client.focused          #00ffff #00ffff #000000 #00ffff #00ffff
+client.focused_inactive #1e1e1e #1e1e1e #aaaaaa #555555 #1e1e1e
+client.unfocused        #1e1e1e #1e1e1e #aaaaaa #555555 #1e1e1e
+client.urgent           #ff006e #ff006e #ffffff #ff006e #ff006e
+client.placeholder      #000000 #000000 #ffffff #000000 #000000
+
+### WALLPAPER
+output * bg /home/ravi/Pictures/wallpaper.png fill
+
+### AUTOSTART
+exec_always systemctl --user set-environment XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=firefox
+exec_always systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK
+exec_always dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=firefox
+exec_always sh -c 'pkill -x waybar || true; exec waybar -c /home/ravi/.config/waybar/config -s /home/ravi/.config/waybar/style.css'
+exec mako
+# nm-applet removed: waybar's network module + network-popup.sh + right-click
+# nm-connection-editor cover it, and no VPN profiles exist. Saved ~48 MB RSS.
+# Restore with: exec nm-applet
+exec wl-paste --type text --watch cliphist store
+exec_always sh -c 'pkill -x swayidle || true; exec /home/ravi/.config/sway/idle.sh'
+
+### TERMINAL
+bindsym $mod+Return exec $term
+
+### APP LAUNCHER
+bindsym $mod+d exec $menu
+
+### CLOSE WINDOW
+bindsym $mod+q kill
+
+### RELOAD / EXIT
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaymsg exit
+
+### LOCK / LOGOUT
+bindsym $mod+Ctrl+l exec /home/ravi/.config/sway/lock.sh
+bindsym $mod+Escape exec /home/ravi/.config/sway/lock.sh
+bindsym $mod+Shift+Escape exec swaymsg exit
+
+### MOVE FOCUS
+bindsym $mod+Left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+
+### MOVE WINDOWS
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+### WORKSPACES
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5
+
+### LAYOUTS
+bindsym $mod+f fullscreen toggle
+bindsym $mod+v splitv
+bindsym $mod+Shift+b splith
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+Shift+f layout toggle split
+bindsym Print exec grim ~/Pictures/screenshot-$(date +%F-%T).png
+bindsym Shift+Print exec grim -g "$(slurp)" ~/Pictures/area-$(date +%F-%T).png
+bindsym Ctrl+Print exec grim -g "$(slurp)" - | wl-copy
+# Area screenshot on a mod-combo (Print key is awkward on laptops without Fn):
+# saves to file AND copies to clipboard in one shot.
+bindsym $mod+Shift+s exec grim -g "$(slurp)" - | tee ~/Pictures/area-$(date +%F-%T).png | wl-copy
+### CUSTOM APP BINDINGS
+bindsym $mod+b exec firefox
+bindsym $mod+e exec /home/ravi/.local/bin/rootlink
+bindsym $mod+Shift+m exec thunderbird  # email client
+bindsym $mod+Shift+v exec code         # VS Code
+bindsym $mod+Shift+d exec discord      # or any app
+
+### KEYBINDINGS POPUP
+# Searchable list of every bindsym in this file, grouped by section (requires wofi).
+bindsym $mod+h exec sh -c '/home/ravi/.config/sway/show_keybindings.sh'
+
+
+### FLOATING
+bindsym $mod+Shift+space floating toggle
+floating_modifier $mod normal
+# wofi launcher (layer-shell, location=center) is unaffected by for_window;
+# this rule only positions --normal-window wofi instances (waybar popups).
+# Initial placement only - network-popup.sh's reposition_once() corrects the
+# final resting position once wofi's real content size is known. Must be
+# "move absolute position", not plain "move position": plain position is
+# relative to the workspace's usable area (inset by gaps + the bar's
+# reserved exclusive zone), which silently offsets floating windows by
+# ~(+22,+64) here - "absolute" places them at the true screen origin.
+for_window [app_id="wofi"] floating enable, border pixel 0, sticky enable, move absolute position 1538 48
+
+# waybar on-click windows: float them under the modules instead of tiling
+for_window [app_id="kitty" title="btop"] floating enable, resize set 1100 700, move position center
+for_window [app_id="kitty" title="Calendar"] floating enable, resize set 520 400, move absolute position 1390 48
+
+
+### AUDIO
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+
+### BRIGHTNESS
+bindsym XF86MonBrightnessUp exec brightnessctl set +5%
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+
+### INPUT / MOUSE / TOUCHPAD
+input "type:pointer" {
+    # Windows-style mouse wheel direction.
+    natural_scroll disabled
+}
+input "type:touchpad" {
+    natural_scroll enabled
+}
+input "7247:72:SIGMACHIP_Usb_Mouse" {
+    natural_scroll disabled
+}
+input "1267:12826:ELAN0788:00_04F3:321A_Mouse" {
+    natural_scroll disabled
+}
+input "type:mouse" {
+    natural_scroll disabled
+}
+
+### BAR
+
+### SWAYFX EYE CANDY
+# All swayfx-only commands live in swayfx.conf because they hard-error on
+# vanilla sway. A missing include is non-fatal, so if that file isn't
+# installed (vanilla sway), the config still loads - just without effects.
+include /home/ravi/.config/sway/swayfx.conf

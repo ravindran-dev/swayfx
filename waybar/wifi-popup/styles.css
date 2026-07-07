@@ -1,0 +1,173 @@
+/* macOS Big Sur/Monterey Wi-Fi popover, adapted for GTK3.
+ * GTK's CSS engine has no backdrop-filter/blur (that's browser-CSS only) -
+ * the translucency below relies on swayfx's compositor-side blur to actually
+ * blur what's behind it; without that it still reads fine as a plain
+ * translucent panel. */
+
+/* The undecorated layer-shell GtkWindow never paints its CSS border (its
+ * draw path only fills background - confirmed: a 2px solid test border
+ * rendered nothing). All panel chrome therefore lives on the root box. */
+window.wifi-popup {
+  background: transparent;
+}
+
+box.wifi-popup-panel {
+  background-color: rgba(30, 30, 30, 0.94);
+  border-radius: 14px;
+  /* Neon cyan hairline - same #00ffff accent as the sway focused-window
+   * border and mako, so the popup reads as part of this desktop. */
+  border: 1px solid rgba(0, 255, 255, 0.75);
+  box-shadow:
+    0 0 10px rgba(0, 255, 255, 0.22),
+    0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.wifi-popup * {
+  font-family: Inter, "SF Pro Display", "Noto Sans", sans-serif;
+  font-size: 13px;
+  color: #e5e5e7;
+}
+
+/* The GTK theme paints ListBox/viewport/scrolledwindow with an opaque
+ * background by default, which was covering the translucent rounded window
+ * behind them (confirmed by screenshot: panel rendered as a flat opaque
+ * rectangle). Everything inside the popup must be transparent so only
+ * window.wifi-popup's rgba background shows. */
+.wifi-popup list,
+.wifi-popup row,
+.wifi-popup scrolledwindow,
+.wifi-popup viewport,
+.wifi-popup undershoot,
+.wifi-popup overshoot {
+  background-color: transparent;
+  background-image: none;
+  border: none;
+}
+
+.wifi-header {
+  padding: 12px 16px 8px 16px;
+}
+
+.wifi-header label.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e5e5e7;
+}
+
+/* GTK3's Gtk.Switch draws its own thumb/trough; we can only recolor the
+ * trough via the :checked state, not fully replicate iOS's exact pill. */
+switch {
+  border-radius: 999px;
+  background-color: rgba(120, 120, 128, 0.32);
+  border: none;
+  min-width: 42px;
+  min-height: 26px;
+  transition: background-color 150ms ease;
+}
+
+/* GTK3 themes draw "I"/"O" state letters inside the trough - macOS switches
+ * have none. Needs the .wifi-popup class prefix to out-rank the
+ * `.wifi-popup *` color rule above (class+element beats class+universal). */
+.wifi-popup switch,
+.wifi-popup switch * {
+  color: transparent;
+  font-size: 1px;
+}
+
+switch:checked {
+  background-color: #ff453a;
+}
+
+switch slider {
+  border-radius: 999px;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  min-width: 22px;
+  min-height: 22px;
+  margin: 2px;
+}
+
+.wifi-section-label {
+  padding: 8px 16px 4px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #a1a1a6;
+  letter-spacing: 0.04em;
+}
+
+.wifi-separator {
+  background-color: rgba(255, 255, 255, 0.08);
+  min-height: 1px;
+  margin: 4px 0;
+}
+
+row.wifi-row {
+  padding: 0 16px;
+  min-height: 40px;
+  transition: background-color 100ms ease;
+}
+
+row.wifi-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+row.wifi-row:active {
+  background-color: rgba(255, 255, 255, 0.09);
+}
+
+.wifi-row label.ssid {
+  color: #e5e5e7;
+  font-size: 13px;
+}
+
+.wifi-row label.ssid.connected {
+  font-weight: 600;
+}
+
+.wifi-row label.secondary {
+  color: #a1a1a6;
+  font-size: 12px;
+}
+
+.wifi-row label.check {
+  color: #ff453a;
+  font-weight: 700;
+}
+
+row.wifi-settings-row {
+  padding: 2px 16px 10px 16px;
+}
+
+.wifi-settings-row label {
+  color: #d1d1d6;
+}
+
+entry.wifi-password {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #e5e5e7;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 6px 10px;
+  caret-color: #ff453a;
+}
+
+button.wifi-flat {
+  background: transparent;
+  border: none;
+  color: #ff453a;
+  font-weight: 600;
+}
+
+button.wifi-flat:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+scrollbar {
+  background-color: transparent;
+}
+
+scrollbar slider {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
