@@ -122,9 +122,16 @@ PACKAGES=(
     # for MPRIS track metadata/control, cava for the live audio waveform
     "playerctl"
     "cava"
-    # Volume OSD (sway/wob-daemon.sh + volume-osd.sh): the on-screen bar
-    # that pops up on the volume/mute keys
-    "wob"
+    # Default applications (~/.config/mimeapps.list): a dedicated PDF
+    # reader, a consistent image viewer, an archive manager, and office
+    # suite - replacing scattered/inconsistent defaults (PDFs opening in
+    # a browser tab, images split between two different viewers depending
+    # on format, .docx opening read-only in a browser, no archive handler
+    # registered at all)
+    "evince"
+    "imv"
+    "ark"
+    "libreoffice-fresh"
 )
 
 # Install packages, checking which ones are already installed
@@ -164,7 +171,6 @@ mkdir -p "$HOME/.config/waybar/volume-popup"
 mkdir -p "$HOME/.config/mako"
 mkdir -p "$HOME/.config/swaylock"
 mkdir -p "$HOME/.config/wofi"
-mkdir -p "$HOME/.config/wob"
 mkdir -p "$HOME/.local/share/applications"
 
 echo -e "${GREEN}✓ Configuration directories created${NC}"
@@ -283,11 +289,13 @@ fi
 
 # Copy sway helper scripts (idle timeout, lock wrapper, keybindings help
 # menu on \$mod+h, lid-close handler, clipboard history picker, volume OSD
-# feeder, wob daemon launcher, pre/post-suspend backlight fixes - all
-# referenced by sway/config)
+# feeder + renderer + daemon launcher, workspace renumbering + its daemon
+# launcher, pre/post-suspend backlight fixes - all referenced by
+# sway/config)
 for script in idle.sh lock.sh show_keybindings.sh before-sleep.sh \
               clipboard-popup.sh lid-close.sh resume-fix.sh volume-osd.sh \
-              wob-daemon.sh; do
+              volume-osd-gtk.py volume-osd-daemon.sh \
+              workspace-renumber.py workspace-renumber-daemon.sh; do
     if [[ -f "$SCRIPT_DIR/sway/$script" ]]; then
         cp "$SCRIPT_DIR/sway/$script" "$HOME/.config/sway/$script"
         chmod 755 "$HOME/.config/sway/$script"
@@ -347,20 +355,6 @@ if [[ -f "$SCRIPT_DIR/swaylock/config" ]]; then
     echo -e "${GREEN}  ✓ Swaylock config installed${NC}"
 else
     echo -e "${RED}  ✗ Warning: swaylock/config not found${NC}"
-fi
-
-# Copy wob (volume OSD) styling. NOTE the config file has NO [section]
-# header at all - confirmed directly against wob's own source
-# (src/config.c: handler() parses global settings under section == "",
-# i.e. before any [bracket] line) after two wrong guesses ([main], then
-# [default]) both got silently rejected with "Unknown config section ...".
-if [[ -f "$SCRIPT_DIR/wob/wob.ini" ]]; then
-    mkdir -p "$HOME/.config/wob"
-    cp "$SCRIPT_DIR/wob/wob.ini" "$HOME/.config/wob/wob.ini"
-    chmod 644 "$HOME/.config/wob/wob.ini"
-    echo -e "${GREEN}  ✓ wob (volume OSD) config installed${NC}"
-else
-    echo -e "${RED}  ✗ Warning: wob/wob.ini not found${NC}"
 fi
 
 echo -e "${GREEN}✓ Configuration files installed${NC}"
@@ -434,7 +428,13 @@ echo "    - Now-playing module (playerctl + cava waveform)"
 echo "    - Wi-Fi popup (incl. hotspot sharing)"
 echo "    - Bluetooth popup"
 echo "    - Volume popup"
-echo "  • wob volume OSD (pops up on the volume/mute keys)"
+echo "  • Volume OSD - a rounded-pill bar on the volume/mute keys (GTK,"
+echo "    not wob: wob can't round its own corners and swayfx can't do it"
+echo "    for a layer-shell surface's content, only its shadow)"
+echo "  • Dynamic workspace renumbering (closing workspace 3 while 1,3,5"
+echo "    exist relabels 5 to 3 - numbers always stay contiguous)"
+echo "  • Default applications (browser, PDF, office docs, images,"
+echo "    archives, video/audio - ~/.config/mimeapps.list)"
 echo "  • Mako notification daemon"
 echo "  • Swaylock screen locker"
 echo "  • Clipboard history picker (\$mod+v)"
@@ -475,7 +475,9 @@ echo "   • Sway: ~/.config/sway/config"
 echo "   • Waybar: ~/.config/waybar/{config,style.css}"
 echo "   • Wi-Fi/Bluetooth/Volume popups: ~/.config/waybar/{wifi,bluetooth,volume}-popup/"
 echo "   • Now-playing module: ~/.config/waybar/scripts/media-visualizer.py"
-echo "   • wob (volume OSD): ~/.config/wob/wob.ini"
+echo "   • Volume OSD: ~/.config/sway/volume-osd-gtk.py"
+echo "   • Workspace renumbering: ~/.config/sway/workspace-renumber.py"
+echo "   • Default applications: ~/.config/mimeapps.list"
 echo "   • Mako: ~/.config/mako/config"
 echo "   • Swaylock: ~/.config/swaylock/config"
 echo ""

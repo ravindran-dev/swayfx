@@ -37,9 +37,9 @@ client.placeholder      #000000 #000000 #ffffff #000000 #000000
 output * bg /home/ravi/Pictures/wallpaper.png fill
 
 ### AUTOSTART
-exec_always systemctl --user set-environment XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=firefox
+exec_always systemctl --user set-environment XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=brave-nightly
 exec_always systemctl --user import-environment DISPLAY WAYLAND_DISPLAY SWAYSOCK
-exec_always dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=firefox
+exec_always dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY SWAYSOCK XDG_CURRENT_DESKTOP=sway XDG_SESSION_TYPE=wayland QT_QPA_PLATFORM=wayland BROWSER=brave-nightly
 exec_always sh -c 'pkill -x waybar || true; exec waybar -c /home/ravi/.config/waybar/config -s /home/ravi/.config/waybar/style.css'
 exec mako
 # nm-applet removed: waybar's network module + network-popup.sh + right-click
@@ -47,17 +47,20 @@ exec mako
 # Restore with: exec nm-applet
 exec wl-paste --type text --watch cliphist store
 exec_always sh -c 'pkill -x swayidle || true; exec /home/ravi/.config/sway/idle.sh'
-# wob: the volume OSD bar (see AUDIO section below) - pkill+restart on
-# reload rather than plain exec, same reasoning as waybar above, so a
-# `$mod+Shift+c` reload doesn't leave a second wob reading the same FIFO.
-# `pkill -x`, NOT `-f`: confirmed live, isolating it line by line, that
-# `pkill -f <anything>` inside this exec_always never returns at all (not
-# even a nonexistent pattern that should exit instantly) - silently
-# blocking every command after it in the same sh -c, which is why this
-# whole line was never actually starting wob in the first place. `-x`
-# (exact process-name match, no full-cmdline /proc scan) doesn't hit
-# whatever that was and returns immediately, confirmed the same way.
-exec_always sh -c 'pkill -x wob-daemon.sh || true; pkill -x wob || true; exec /home/ravi/.config/sway/wob-daemon.sh'
+# Volume OSD bar. NOT wob: wob has no rounded-corner support at all, and
+# swayfx can't round a layer-shell surface's own content either (only its
+# shadow - see volume-osd-gtk.py's docstring for the full story) - this is
+# a small GTK layer-shell overlay instead, styled with real CSS
+# border-radius. Plain exec_always, no pkill+restart: the daemon script
+# itself uses a flock so a second reload's attempt to start another copy
+# just exits immediately instead of duplicating it - see the comment in
+# volume-osd-daemon.sh for why pkill (by name OR by full command line
+# pattern) doesn't work safely for this specific process.
+exec_always /home/ravi/.config/sway/volume-osd-daemon.sh
+# Keeps workspace numbers contiguous as they're opened/closed (e.g. 1, 2,
+# 5 becomes 1, 2, 3 once nothing's left on 3 or 4) - see
+# workspace-renumber.py's own docstring for the collision-safety proof.
+exec_always /home/ravi/.config/sway/workspace-renumber-daemon.sh
 
 ### TERMINAL
 bindsym $mod+Return exec $term
@@ -170,9 +173,9 @@ for_window [app_id="rootlink"] floating enable, border pixel 0, move position ce
 
 ### AUDIO
 # Each binding still does the real pactl change, then feeds the resulting
-# level to wob's FIFO for the on-screen bar (volume-osd.sh reads it back
-# from pactl rather than assuming the delta applied cleanly, since it's
-# already clamped at 0/100 either way).
+# level to the volume OSD's FIFO (volume-osd.sh reads it back from pactl
+# rather than assuming the delta applied cleanly, since it's already
+# clamped at 0/100 either way).
 bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5% && /home/ravi/.config/sway/volume-osd.sh
 bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5% && /home/ravi/.config/sway/volume-osd.sh
 bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle && /home/ravi/.config/sway/volume-osd.sh

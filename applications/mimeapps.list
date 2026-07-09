@@ -1,28 +1,115 @@
+[Added Associations]
+application/pdf=org.gnome.Evince.desktop;
+application/msword=libreoffice-writer.desktop;
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop;
+application/vnd.oasis.opendocument.text=libreoffice-writer.desktop;
+application/vnd.ms-excel=libreoffice-calc.desktop;
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop;
+application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop;
+application/vnd.ms-powerpoint=libreoffice-impress.desktop;
+application/vnd.openxmlformats-officedocument.presentationml.presentation=libreoffice-impress.desktop;
+application/vnd.oasis.opendocument.presentation=libreoffice-impress.desktop;
+application/zip=org.kde.ark.desktop;
+application/x-tar=org.kde.ark.desktop;
+application/x-compressed-tar=org.kde.ark.desktop;
+application/x-7z-compressed=org.kde.ark.desktop;
+application/x-rar=org.kde.ark.desktop;
+application/x-bzip-compressed-tar=org.kde.ark.desktop;
+application/gzip=org.kde.ark.desktop;
+application/json=nvim.desktop;
+application/x-docbook+xml=nvim.desktop;
+application/x-yaml=nvim.desktop;
+image/avif=imv-image-viewer.desktop;
+image/bmp=imv-image-viewer.desktop;
+image/gif=imv-image-viewer.desktop;
+image/heif=imv-image-viewer.desktop;
+image/jpeg=imv-image-viewer.desktop;
+image/jpg=imv-image-viewer.desktop;
+image/png=imv-image-viewer.desktop;
+image/svg+xml=imv-image-viewer.desktop;
+image/tiff=imv-image-viewer.desktop;
+image/webp=imv-image-viewer.desktop;
+image/x-icns=imv-image-viewer.desktop;
+text/markdown=nvim.desktop;
+text/plain=nvim.desktop;
+text/x-cmake=nvim.desktop;
+
 [Default Applications]
-application/json=firefox.desktop
-application/pdf=firefox.desktop
-application/xhtml+xml=firefox.desktop
-application/xml=firefox.desktop
-audio/flac=mpv.desktop
-audio/mpeg=mpv.desktop
-audio/ogg=mpv.desktop
-audio/wav=mpv.desktop
+# Browser - brave-browser-nightly.desktop specifically (not the similarly
+# named com.brave.Browser.nightly.desktop, which points at a binary path
+# - /usr/bin/brave-browser-nightly - that doesn't exist on this system;
+# the real nightly binary is /usr/bin/brave-nightly, confirmed live, and
+# only brave-browser-nightly.desktop's Exec= actually points at it).
+# Matches the browser actually in daily use all session (every window
+# observed live had app_id "brave-browser-nightly", not firefox).
+text/html=brave-browser-nightly.desktop
+application/xhtml+xml=brave-browser-nightly.desktop
+application/xml=brave-browser-nightly.desktop
+text/xml=brave-browser-nightly.desktop
+x-scheme-handler/about=brave-browser-nightly.desktop
+x-scheme-handler/chrome=brave-browser-nightly.desktop
+x-scheme-handler/http=brave-browser-nightly.desktop
+x-scheme-handler/https=brave-browser-nightly.desktop
+x-scheme-handler/claude=claude-desktop.desktop
+
+# PDF - a dedicated reader (Evince, already installed) instead of the
+# previous firefox.desktop default, which opened every PDF as a browser
+# tab
+application/pdf=org.gnome.Evince.desktop
+
+# Office documents - LibreOffice instead of the previous firefox.desktop
+# default for .docx (which can view but not edit); LibreOffice is
+# installed and is the actual editor for these formats
+application/msword=libreoffice-writer.desktop
+application/vnd.openxmlformats-officedocument.wordprocessingml.document=libreoffice-writer.desktop
+application/vnd.oasis.opendocument.text=libreoffice-writer.desktop
+application/vnd.ms-excel=libreoffice-calc.desktop
+application/vnd.openxmlformats-officedocument.spreadsheetml.sheet=libreoffice-calc.desktop
+application/vnd.oasis.opendocument.spreadsheet=libreoffice-calc.desktop
+application/vnd.ms-powerpoint=libreoffice-impress.desktop
+application/vnd.openxmlformats-officedocument.presentationml.presentation=libreoffice-impress.desktop
+application/vnd.oasis.opendocument.presentation=libreoffice-impress.desktop
+
+# Archives - Ark (KDE, already installed); nothing was set for these
+# before at all
+application/zip=org.kde.ark.desktop
+application/x-tar=org.kde.ark.desktop
+application/x-compressed-tar=org.kde.ark.desktop
+application/x-7z-compressed=org.kde.ark.desktop
+application/x-rar=org.kde.ark.desktop
+application/x-bzip-compressed-tar=org.kde.ark.desktop
+application/gzip=org.kde.ark.desktop
+
+# Images - imv consistently for every type (previously split between
+# imv-image-viewer.desktop and org.kde.gwenview.desktop depending on
+# format, for no apparent reason - imv is also this repo's own
+# already-established choice, installed by setup.sh)
 image/avif=imv-image-viewer.desktop
 image/bmp=imv-image-viewer.desktop
 image/gif=imv-image-viewer.desktop
+image/heif=imv-image-viewer.desktop
 image/jpeg=imv-image-viewer.desktop
 image/jpg=imv-image-viewer.desktop
 image/png=imv-image-viewer.desktop
 image/svg+xml=imv-image-viewer.desktop
 image/tiff=imv-image-viewer.desktop
 image/webp=imv-image-viewer.desktop
-inode/directory=org.kde.dolphin.desktop
-text/html=firefox.desktop
-text/xml=firefox.desktop
+image/x-icns=imv-image-viewer.desktop
+
+# Video/audio - mpv (unchanged, already correct)
 video/mp4=mpv.desktop
 video/webm=mpv.desktop
 video/x-matroska=mpv.desktop
-x-scheme-handler/about=firefox.desktop
-x-scheme-handler/chrome=firefox.desktop
-x-scheme-handler/http=firefox.desktop
-x-scheme-handler/https=firefox.desktop
+audio/flac=mpv.desktop
+audio/mpeg=mpv.desktop
+audio/ogg=mpv.desktop
+audio/wav=mpv.desktop
+
+# Files/text/code (unchanged, already correct)
+inode/directory=rootlink.desktop
+application/json=nvim.desktop
+application/x-docbook+xml=nvim.desktop
+application/x-yaml=nvim.desktop
+text/markdown=nvim.desktop
+text/plain=nvim.desktop
+text/x-cmake=nvim.desktop
