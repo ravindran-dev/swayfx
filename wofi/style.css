@@ -8,7 +8,7 @@
 window {
   margin: 0;
   background:
-    linear-gradient(180deg, rgba(42, 48, 60, 0.80), rgba(13, 17, 24, 0.86));
+    linear-gradient(180deg, rgba(42, 48, 60, 0.94), rgba(13, 17, 24, 0.97));
   border: 1px solid rgba(255, 255, 255, 0.20);
   border-radius: 18px;
   color: #edf3fb;

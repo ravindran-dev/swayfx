@@ -4,6 +4,7 @@ matching waybar's usual click-to-toggle module behavior."""
 import fcntl
 import os
 import signal
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -31,6 +32,39 @@ def _already_running_pid():
         return None
 
 
+BLUETOOTH_PID_PATH = "/run/user/{}/bluetooth-popup.pid".format(os.getuid())
+VOLUME_PID_PATH = "/run/user/{}/volume-popup.pid".format(os.getuid())
+
+
+def _close_other_waybar_popups():
+    # Without this, opening the Wi-Fi popup while the Bluetooth or Volume
+    # one (or any other waybar popup) is open leaves both stacked in the
+    # same corner - confirmed live, not hypothetical. Each popup script
+    # closes the others on open so only one is ever visible at a time.
+    try:
+        # timeout=: confirmed live on this system that `pkill -f <pattern>`
+        # can take far longer than expected to return (isolated the exact
+        # same call hanging well past 10s, both here and independently in
+        # sway's own exec_always) - `-f` has to read and regex-match every
+        # process's full cmdline, and with this many heavyweight processes
+        # running (browser content processes, several JVMs, ...) that scan
+        # isn't as cheap as it looks. Without a timeout this could block
+        # the popup from ever opening; with one, worst case is just a stale
+        # wofi window staying open an extra moment.
+        subprocess.run(["pkill", "-u", os.environ.get("USER", ""), "-f", "wofi.*--prompt"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass
+    for pid_path in (BLUETOOTH_PID_PATH, VOLUME_PID_PATH):
+        try:
+            with open(pid_path) as f:
+                other_pid = int(f.read().strip())
+            os.kill(other_pid, 0)
+            os.kill(other_pid, signal.SIGUSR1)
+        except (FileNotFoundError, ValueError, ProcessLookupError, PermissionError):
+            pass
+
+
 def main():
     existing = _already_running_pid()
     if existing:
@@ -38,6 +72,8 @@ def main():
         # matches the old wofi script's "invoke again to dismiss" behavior.
         os.kill(existing, signal.SIGUSR1)
         return
+
+    _close_other_waybar_popups()
 
     lock_fd = os.open(LOCK_PATH, os.O_CREAT | os.O_RDWR)
     try:
@@ -51,7 +87,23 @@ def main():
     net = network.Network()
 
     def quit_app():
-        Gtk.main_quit()
+        # NOT Gtk.main_quit(): confirmed live (repeatedly, with a stack
+        # trace showing 10 threads blocked in futex_do_wait) that Gtk.main()
+        # can simply never return even after main_quit() succeeds - some
+        # libnm/GDBus-internal native worker thread that the GLib main loop
+        # or Python's interpreter shutdown ends up waiting on. Observed
+        # hangs ranged from a few seconds to 2+ minutes. This is the single
+        # callback every close path (Escape, click-outside, selecting a
+        # network, the SIGUSR1 second-click toggle) already funnels through
+        # via popup.close_popup() -> on_closed - fixing it once here covers
+        # all of them, rather than special-casing the signal path alone.
+        try:
+            os.remove(PID_PATH)
+        except FileNotFoundError:
+            pass
+        fcntl.flock(lock_fd, fcntl.LOCK_UN)
+        os.close(lock_fd)
+        os._exit(0)
 
     popup = ui.WifiPopup(net, on_closed=quit_app)
 
@@ -67,15 +119,7 @@ def main():
     GLib.unix_signal_add(GLib.PRIORITY_HIGH, signal.SIGUSR1, _on_sigusr1)
     popup.show_animated()
 
-    try:
-        Gtk.main()
-    finally:
-        try:
-            os.remove(PID_PATH)
-        except FileNotFoundError:
-            pass
-        fcntl.flock(lock_fd, fcntl.LOCK_UN)
-        os.close(lock_fd)
+    Gtk.main()
 
 
 if __name__ == "__main__":

@@ -6,10 +6,15 @@ signals over the same GLib main loop Gtk.main() already pumps, so there is
 no polling anywhere in this module - device/AP/connection changes reach the
 UI the moment NetworkManager's own D-Bus signals fire.
 """
+import subprocess
+import threading
+
 import gi
 
 gi.require_version("NM", "1.0")
 from gi.repository import NM, GLib, GObject
+
+HOTSPOT_CON_NAME = "Hotspot"
 
 
 def _ssid_to_str(ap):
@@ -208,3 +213,144 @@ class Network(GObject.Object):
             s = c.get_setting_wireless()
             if s and s.get_ssid() and NM.utils_ssid_to_utf8(s.get_ssid().get_data()) == ssid:
                 c.delete_async(None, lambda *_: None)
+
+    # ---- hotspot -----------------------------------------------------
+    #
+    # Deliberately shells out to `nmcli device wifi hotspot` here rather than
+    # building the NM.SimpleConnection by hand like connect_to() does: a
+    # working hotspot needs AP mode *and* ipv4.method=shared (NAT + DHCP
+    # server, so connected devices actually get internet through whatever
+    # else is online - confirmed this system's ethernet holds the real
+    # default route) *and* correct WPA2 AP-mode security settings all
+    # agreeing with each other. nmcli's hotspot command is the well-tested,
+    # purpose-built tool for getting that exact combination right - hand-
+    # rolling it via raw D-Bus risks a subtly wrong setting (e.g. forgetting
+    # "shared") that looks like it worked but leaves clients with no
+    # internet. Runs in a background thread (nmcli blocks for a few seconds
+    # while the connection activates) so the GTK main loop never stalls.
+
+    def is_hotspot_active(self):
+        if not self._wifi_dev:
+            return False
+        ac = self._wifi_dev.get_active_connection()
+        if not ac:
+            return False
+        remote = self.client.get_connection_by_uuid(ac.get_uuid())
+        if not remote:
+            return False
+        wifi_setting = remote.get_setting_wireless()
+        return wifi_setting is not None and wifi_setting.get_mode() == "ap"
+
+    def _run_nmcli_async(self, args, on_done):
+        def _run():
+            try:
+                subprocess.run(args, check=True, capture_output=True, text=True, timeout=20)
+                ok, err = True, None
+            except subprocess.CalledProcessError as e:
+                ok, err = False, (e.stderr or "").strip() or "nmcli failed"
+            except Exception as e:
+                ok, err = False, str(e)
+            if on_done:
+                GLib.idle_add(on_done, ok, err)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def start_hotspot(self, ssid, password, on_done=None):
+        if not self._wifi_dev:
+            if on_done:
+                on_done(False, "No Wi-Fi device found")
+            return
+        self._run_nmcli_async(
+            ["nmcli", "device", "wifi", "hotspot",
+             "ifname", self._wifi_dev.get_iface(),
+             "con-name", HOTSPOT_CON_NAME,
+             "ssid", ssid, "password", password],
+            on_done,
+        )
+
+    def stop_hotspot(self, on_done=None):
+        self._run_nmcli_async(
+            ["nmcli", "connection", "down", HOTSPOT_CON_NAME], on_done
+        )
+
+    def update_hotspot(self, ssid, password, on_done=None):
+        """Edits the name/password of the already-saved Hotspot profile in
+        place via `nmcli connection modify`, rather than recreating it
+        through start_hotspot()'s `nmcli device wifi hotspot` path - that
+        command is for first-time creation and isn't guaranteed to update
+        an existing same-named profile cleanly. If the hotspot is currently
+        active, reactivates it afterward so already-connected devices (and
+        the popup's own "Sharing internet as ..." state) actually reflect
+        the new password immediately instead of it silently only applying
+        on the next manual toggle."""
+        was_active = self.is_hotspot_active()
+
+        def _after_modify(ok, err):
+            if not ok or not was_active:
+                if on_done:
+                    on_done(ok, err)
+                return
+            self._run_nmcli_async(["nmcli", "connection", "up", HOTSPOT_CON_NAME], on_done)
+
+        self._run_nmcli_async(
+            ["nmcli", "connection", "modify", HOTSPOT_CON_NAME,
+             "802-11-wireless.ssid", ssid,
+             "wifi-sec.psk", password],
+            _after_modify,
+        )
+
+    def has_saved_hotspot(self):
+        return self.client.get_connection_by_id(HOTSPOT_CON_NAME) is not None
+
+    def get_saved_hotspot_ssid(self):
+        """SSID of the saved Hotspot profile, whether or not it's active
+        right now - lets the UI show/reuse the last-configured name instead
+        of always defaulting back to the hostname."""
+        conn = self.client.get_connection_by_id(HOTSPOT_CON_NAME)
+        if not conn:
+            return None
+        s = conn.get_setting_wireless()
+        if not s or not s.get_ssid():
+            return None
+        return NM.utils_ssid_to_utf8(s.get_ssid().get_data())
+
+    def activate_saved_hotspot(self, on_done=None):
+        """Re-activates the existing Hotspot profile without asking for the
+        name/password again - the "just flip the switch" path for repeat
+        use, once it's been set up once via start_hotspot()."""
+        self._run_nmcli_async(
+            ["nmcli", "connection", "up", HOTSPOT_CON_NAME], on_done
+        )
+
+    def _run_nmcli_output_async(self, args, on_done):
+        """Like _run_nmcli_async, but hands back stdout on success instead
+        of just True/False - _run_nmcli_async's subprocess.run() call
+        doesn't even keep its own result, only used for pass/fail state
+        changes so far, not reads."""
+        def _run():
+            try:
+                result = subprocess.run(args, check=True, capture_output=True, text=True, timeout=10)
+                ok, output = True, result.stdout
+            except Exception:
+                ok, output = False, None
+            GLib.idle_add(on_done, ok, output)
+
+        threading.Thread(target=_run, daemon=True).start()
+
+    def get_saved_hotspot_password(self, on_done):
+        """on_done(password: str|None). The popup only holds the hotspot
+        password in memory for the process that originally set it up
+        (typed by the user or randomly generated) - reopening the popup, or
+        needing to type it into a second device, has no way to see it again
+        otherwise. NetworkManager still has it: psk-flags=0 means it's
+        stored in the system connection, readable by the owning user
+        without a secrets-agent prompt - confirmed live via
+        `nmcli --show-secrets connection show Hotspot`."""
+        def _cb(ok, output):
+            on_done(output.strip() if ok and output else None)
+
+        self._run_nmcli_output_async(
+            ["nmcli", "-s", "-g", "802-11-wireless-security.psk",
+             "connection", "show", HOTSPOT_CON_NAME],
+            _cb,
+        )

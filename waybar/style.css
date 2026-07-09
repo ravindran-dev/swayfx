@@ -21,6 +21,7 @@ window#waybar {
 #tray,
 #pulseaudio,
 #network,
+#bluetooth,
 #cpu,
 #memory,
 #battery,
@@ -33,6 +34,7 @@ window#waybar {
 #tray,
 #pulseaudio,
 #network,
+#bluetooth,
 #cpu,
 #memory,
 #battery,
@@ -51,12 +53,13 @@ window#waybar {
 }
 
 #workspaces {
-  padding-left: 2px;
+  padding-left: 6px;
 }
 
 #workspaces button {
-  margin-right: 6px;
-  min-width: 28px;
+  margin-right: 8px;
+  min-width: 24px;
+  padding: 0 9px;
   transition: all 180ms ease;
 }
 
@@ -64,6 +67,7 @@ window#waybar {
 #tray:hover,
 #pulseaudio:hover,
 #network:hover,
+#bluetooth:hover,
 #cpu:hover,
 #memory:hover,
 #battery:hover,
@@ -96,6 +100,52 @@ window#waybar {
   color: #fff;
 }
 
+#custom-media {
+  margin: 5px 0;
+  margin-left: 0;
+  transition: all 200ms ease;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.075));
+  border: 1px solid rgba(255, 143, 171, 0.35);
+  border-radius: 999px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px rgba(255, 255, 255, 0.08);
+  padding: 0 13px;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
+}
+
+#custom-media:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.13));
+  border-color: rgba(255, 143, 171, 0.55);
+}
+
+#custom-media.playing {
+  color: #ff8fab;
+  border-color: rgba(255, 143, 171, 0.55);
+  box-shadow:
+    0 8px 24px rgba(255, 90, 130, 0.20),
+    inset 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 -1px rgba(255, 255, 255, 0.08);
+}
+
+/* Static resting line, no title - a paused track isn't earning the same
+ * width as one actually playing (see media-visualizer.py). Slightly
+ * brighter than .idle below since there's at least a track queued. */
+#custom-media.paused {
+  color: #b98fa3;
+}
+
+/* No MPRIS player at all (app actually closed, not just paused) - same
+ * static resting wave as .paused, dimmer still since there's not even a
+ * track queued right now. */
+#custom-media.idle {
+  color: #6e6470;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 #window {
   padding: 0 16px;
   color: #dce7f3;
@@ -110,13 +160,14 @@ window#waybar {
 #tray,
 #pulseaudio,
 #network,
+#bluetooth,
 #cpu,
 #memory,
 #battery,
 #clock {
   margin-left: 0;
-  margin-right: 6px;
-  padding: 0 11px;
+  margin-right: 8px;
+  padding: 0 12px;
 }
 
 #pulseaudio {
@@ -125,6 +176,19 @@ window#waybar {
 
 #network {
   color: #95e6b3;
+}
+
+#bluetooth {
+  color: #7fa8ff;
+}
+
+#bluetooth.connected {
+  color: #7ee787;
+}
+
+#bluetooth.disabled,
+#bluetooth.off {
+  color: #8a93a3;
 }
 
 #cpu {

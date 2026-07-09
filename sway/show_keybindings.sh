@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Searchable sway keybindings library: reads this user's own sway config,
+# Searchable sway keybindings library: reads this user's own sway config,z
 # groups every `bindsym` under its nearest `### SECTION` heading, and shows
 # it in wofi (fuzzy search + case-insensitive already on globally).
 set -euo pipefail

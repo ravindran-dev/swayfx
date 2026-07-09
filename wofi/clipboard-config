@@ -1,0 +1,11 @@
+show=dmenu
+prompt=Clipboard
+insensitive=true
+matching=fuzzy
+location=center
+width=560
+lines=10
+dynamic_lines=true
+layer=overlay
+gtk_dark=true
+hide_scroll=true

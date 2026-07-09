@@ -105,11 +105,26 @@ PACKAGES=(
     "lxappearance"
     "polkit"
     "jq"
-    # Wi-Fi popup (waybar/wifi-popup): GTK3 panel driven by NetworkManager
+    # Wi-Fi/Bluetooth/Volume popups (waybar/{wifi,bluetooth,volume}-popup):
+    # GTK3 panels driven by NetworkManager/BlueZ/pactl over D-Bus
     "python-gobject"
     "gtk-layer-shell"
     "libnm"
+    "bluez"
+    "bluez-utils"
     "brightnessctl"
+    # Wi-Fi hotspot sharing (wifi-popup's Hotspot toggle): NetworkManager's
+    # ipv4.method=shared needs dnsmasq for DHCP/DNS to the connected
+    # devices - without it, the hotspot activates but immediately fails
+    # ("could not start dnsmasq: Could not find dnsmasq binary")
+    "dnsmasq"
+    # Now-playing module (waybar/scripts/media-visualizer.py): playerctl
+    # for MPRIS track metadata/control, cava for the live audio waveform
+    "playerctl"
+    "cava"
+    # Volume OSD (sway/wob-daemon.sh + volume-osd.sh): the on-screen bar
+    # that pops up on the volume/mute keys
+    "wob"
 )
 
 # Install packages, checking which ones are already installed
@@ -143,8 +158,13 @@ echo -e "${YELLOW}[3/6] Creating configuration directory structure...${NC}"
 
 mkdir -p "$HOME/.config/sway"
 mkdir -p "$HOME/.config/waybar/scripts"
+mkdir -p "$HOME/.config/waybar/wifi-popup"
+mkdir -p "$HOME/.config/waybar/bluetooth-popup"
+mkdir -p "$HOME/.config/waybar/volume-popup"
 mkdir -p "$HOME/.config/mako"
 mkdir -p "$HOME/.config/swaylock"
+mkdir -p "$HOME/.config/wofi"
+mkdir -p "$HOME/.config/wob"
 mkdir -p "$HOME/.local/share/applications"
 
 echo -e "${GREEN}✓ Configuration directories created${NC}"
@@ -224,9 +244,50 @@ else
     echo -e "${RED}  ✗ Warning: waybar/wifi-popup not found${NC}"
 fi
 
-# Copy sway helper scripts (idle timeout, lock wrapper, keybindings help menu
-# on \$mod+h - all referenced by sway/config)
-for script in idle.sh lock.sh show_keybindings.sh; do
+# Copy the GTK Bluetooth popup - mirrors wifi-popup's structure exactly,
+# raw D-Bus/BlueZ instead of libnm (no GI binding exists for BlueZ)
+if [[ -d "$SCRIPT_DIR/waybar/bluetooth-popup" ]]; then
+    mkdir -p "$HOME/.config/waybar/bluetooth-popup"
+    cp "$SCRIPT_DIR/waybar/bluetooth-popup/"*.py "$HOME/.config/waybar/bluetooth-popup/"
+    cp "$SCRIPT_DIR/waybar/bluetooth-popup/styles.css" "$HOME/.config/waybar/bluetooth-popup/"
+    chmod 755 "$HOME/.config/waybar/bluetooth-popup/bluetooth_popup.py"
+    echo -e "${GREEN}  ✓ Bluetooth popup (GTK) installed${NC}"
+else
+    echo -e "${RED}  ✗ Warning: waybar/bluetooth-popup not found${NC}"
+fi
+
+# Copy the GTK Volume popup - same architecture again, pactl instead of
+# libnm/BlueZ (no GI binding exists for PulseAudio/PipeWire either)
+if [[ -d "$SCRIPT_DIR/waybar/volume-popup" ]]; then
+    mkdir -p "$HOME/.config/waybar/volume-popup"
+    cp "$SCRIPT_DIR/waybar/volume-popup/"*.py "$HOME/.config/waybar/volume-popup/"
+    cp "$SCRIPT_DIR/waybar/volume-popup/styles.css" "$HOME/.config/waybar/volume-popup/"
+    chmod 755 "$HOME/.config/waybar/volume-popup/volume_popup.py"
+    echo -e "${GREEN}  ✓ Volume popup (GTK) installed${NC}"
+else
+    echo -e "${RED}  ✗ Warning: waybar/volume-popup not found${NC}"
+fi
+
+# Copy the "now playing" waybar module: playerctl for MPRIS metadata/
+# control, cava for the live audio waveform (both installed above)
+if [[ -f "$SCRIPT_DIR/waybar/scripts/media-visualizer.py" ]]; then
+    mkdir -p "$HOME/.config/waybar/scripts"
+    cp "$SCRIPT_DIR/waybar/scripts/media-visualizer.py" "$HOME/.config/waybar/scripts/media-visualizer.py"
+    cp "$SCRIPT_DIR/waybar/scripts/media-focus-window.sh" "$HOME/.config/waybar/scripts/media-focus-window.sh"
+    cp "$SCRIPT_DIR/waybar/media-visualizer-cava.conf" "$HOME/.config/waybar/media-visualizer-cava.conf"
+    chmod 755 "$HOME/.config/waybar/scripts/media-visualizer.py" "$HOME/.config/waybar/scripts/media-focus-window.sh"
+    echo -e "${GREEN}  ✓ Now-playing module installed${NC}"
+else
+    echo -e "${RED}  ✗ Warning: waybar/scripts/media-visualizer.py not found${NC}"
+fi
+
+# Copy sway helper scripts (idle timeout, lock wrapper, keybindings help
+# menu on \$mod+h, lid-close handler, clipboard history picker, volume OSD
+# feeder, wob daemon launcher, pre/post-suspend backlight fixes - all
+# referenced by sway/config)
+for script in idle.sh lock.sh show_keybindings.sh before-sleep.sh \
+              clipboard-popup.sh lid-close.sh resume-fix.sh volume-osd.sh \
+              wob-daemon.sh; do
     if [[ -f "$SCRIPT_DIR/sway/$script" ]]; then
         cp "$SCRIPT_DIR/sway/$script" "$HOME/.config/sway/$script"
         chmod 755 "$HOME/.config/sway/$script"
@@ -258,6 +319,18 @@ else
     echo -e "${RED}  ✗ Warning: wofi/config not found${NC}"
 fi
 
+# Copy the clipboard picker's dedicated wofi config ($mod+v) - deliberately
+# separate from wofi/config: the shared config's fixed height overrides
+# dynamic_lines, which is what lets this one size itself to the actual
+# number of clipboard entries instead of always showing a tall empty box
+if [[ -f "$SCRIPT_DIR/wofi/clipboard-config" ]]; then
+    cp "$SCRIPT_DIR/wofi/clipboard-config" "$HOME/.config/wofi/clipboard-config"
+    chmod 644 "$HOME/.config/wofi/clipboard-config"
+    echo -e "${GREEN}  ✓ Clipboard picker config installed${NC}"
+else
+    echo -e "${RED}  ✗ Warning: wofi/clipboard-config not found${NC}"
+fi
+
 # Copy Mako configuration
 if [[ -f "$SCRIPT_DIR/mako/config" ]]; then
     cp "$SCRIPT_DIR/mako/config" "$HOME/.config/mako/config"
@@ -274,6 +347,20 @@ if [[ -f "$SCRIPT_DIR/swaylock/config" ]]; then
     echo -e "${GREEN}  ✓ Swaylock config installed${NC}"
 else
     echo -e "${RED}  ✗ Warning: swaylock/config not found${NC}"
+fi
+
+# Copy wob (volume OSD) styling. NOTE the config file has NO [section]
+# header at all - confirmed directly against wob's own source
+# (src/config.c: handler() parses global settings under section == "",
+# i.e. before any [bracket] line) after two wrong guesses ([main], then
+# [default]) both got silently rejected with "Unknown config section ...".
+if [[ -f "$SCRIPT_DIR/wob/wob.ini" ]]; then
+    mkdir -p "$HOME/.config/wob"
+    cp "$SCRIPT_DIR/wob/wob.ini" "$HOME/.config/wob/wob.ini"
+    chmod 644 "$HOME/.config/wob/wob.ini"
+    echo -e "${GREEN}  ✓ wob (volume OSD) config installed${NC}"
+else
+    echo -e "${RED}  ✗ Warning: wob/wob.ini not found${NC}"
 fi
 
 echo -e "${GREEN}✓ Configuration files installed${NC}"
@@ -342,9 +429,15 @@ echo ""
 
 echo -e "${GREEN}✓ Successfully installed:${NC}"
 echo "  • Sway window manager"
-echo "  • Waybar status bar"
+echo "  • Waybar status bar, with:"
+echo "    - Now-playing module (playerctl + cava waveform)"
+echo "    - Wi-Fi popup (incl. hotspot sharing)"
+echo "    - Bluetooth popup"
+echo "    - Volume popup"
+echo "  • wob volume OSD (pops up on the volume/mute keys)"
 echo "  • Mako notification daemon"
 echo "  • Swaylock screen locker"
+echo "  • Clipboard history picker (\$mod+v)"
 echo "  • All configuration files and utilities"
 echo ""
 
@@ -373,10 +466,16 @@ echo "   - Mod4 + D: Open application launcher (Wofi)"
 echo "   - Mod4 + Number: Switch workspace"
 echo "   - Mod4 + Q: Close focused window"
 echo "   - Mod4 + F: Toggle fullscreen"
+echo "   - Mod4 + V: Clipboard history"
+echo "   - Mod4 + H: Searchable keybindings list (all of them)"
+echo "   - Mod4 + Shift + C: Reload Sway config"
 echo ""
 echo -e "${YELLOW}Configuration Locations:${NC}"
 echo "   • Sway: ~/.config/sway/config"
 echo "   • Waybar: ~/.config/waybar/{config,style.css}"
+echo "   • Wi-Fi/Bluetooth/Volume popups: ~/.config/waybar/{wifi,bluetooth,volume}-popup/"
+echo "   • Now-playing module: ~/.config/waybar/scripts/media-visualizer.py"
+echo "   • wob (volume OSD): ~/.config/wob/wob.ini"
 echo "   • Mako: ~/.config/mako/config"
 echo "   • Swaylock: ~/.config/swaylock/config"
 echo ""
@@ -384,7 +483,7 @@ echo -e "${YELLOW}Useful Commands:${NC}"
 echo "   • Start Sway from TTY: sway"
 echo "   • Start from another desktop: DISPLAY= sway"
 echo "   • Debug Sway: sway -d 2>&1 | less"
-echo "   • Reload Sway config: Press Mod4 + Shift + R"
+echo "   • Reload Sway config: Mod4 + Shift + C (or: swaymsg reload)"
 echo ""
 echo -e "${GREEN}Enjoy your Sway desktop environment!${NC}"
 echo ""

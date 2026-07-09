@@ -163,14 +163,43 @@ button.wifi-flat:hover {
   border-radius: 8px;
 }
 
-/* Sits inline next to the small "Password: ..." secondary label, not as a
- * standalone action row like the other .wifi-flat buttons - smaller and
- * unbolded so it reads as an inline affordance, not a competing button. */
-button.wifi-hotspot-change {
-  font-size: 11px;
-  font-weight: 400;
-  padding: 0 4px;
-  min-height: 0;
+.volume-mute-btn {
+  font-size: 17px;
+  min-width: 26px;
+  padding: 4px 6px;
+}
+
+.volume-mute-btn.muted {
+  color: #ff453a;
+}
+
+/* GTK3's Gtk.Scale draws trough (full track) + highlight (filled portion)
+ * + slider (the draggable handle) as separate CSS nodes - each needs its
+ * own rule, there's no single "just recolor the bar" shorthand. */
+.volume-scale trough {
+  background-color: rgba(255, 255, 255, 0.14);
+  border: none;
+  border-radius: 999px;
+  min-height: 6px;
+}
+
+.volume-scale highlight {
+  background-color: #ff453a;
+  border-radius: 999px;
+  min-height: 6px;
+}
+
+.volume-scale.muted highlight {
+  background-color: rgba(255, 69, 58, 0.35);
+}
+
+.volume-scale slider {
+  background-color: #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  min-width: 16px;
+  min-height: 16px;
+  margin: -5px 0;
 }
 
 scrollbar {

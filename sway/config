@@ -47,6 +47,17 @@ exec mako
 # Restore with: exec nm-applet
 exec wl-paste --type text --watch cliphist store
 exec_always sh -c 'pkill -x swayidle || true; exec /home/ravi/.config/sway/idle.sh'
+# wob: the volume OSD bar (see AUDIO section below) - pkill+restart on
+# reload rather than plain exec, same reasoning as waybar above, so a
+# `$mod+Shift+c` reload doesn't leave a second wob reading the same FIFO.
+# `pkill -x`, NOT `-f`: confirmed live, isolating it line by line, that
+# `pkill -f <anything>` inside this exec_always never returns at all (not
+# even a nonexistent pattern that should exit instantly) - silently
+# blocking every command after it in the same sh -c, which is why this
+# whole line was never actually starting wob in the first place. `-x`
+# (exact process-name match, no full-cmdline /proc scan) doesn't hit
+# whatever that was and returns immediately, confirmed the same way.
+exec_always sh -c 'pkill -x wob-daemon.sh || true; pkill -x wob || true; exec /home/ravi/.config/sway/wob-daemon.sh'
 
 ### TERMINAL
 bindsym $mod+Return exec $term
@@ -65,6 +76,16 @@ bindsym $mod+Shift+e exec swaymsg exit
 bindsym $mod+Ctrl+l exec /home/ravi/.config/sway/lock.sh
 bindsym $mod+Escape exec /home/ravi/.config/sway/lock.sh
 bindsym $mod+Shift+Escape exec swaymsg exit
+
+### LID SWITCH
+# Deliberately NOT a real suspend - see the comment in lid-close.sh for why
+# (boot disk is an external USB SSD; a real suspend hung 11+ minutes on a
+# previous boot trying to resume it). logind's own HandleLidSwitch is set
+# to "ignore" so sway has sole control here - see the lid-fix script.
+# --reload: re-applies correctly if sway reloads while the lid is already
+# closed, instead of leaving the screen in a stale on/off state.
+bindswitch --reload lid:on exec /home/ravi/.config/sway/lid-close.sh
+bindswitch --reload lid:off exec swaymsg 'output * power on'
 
 ### MOVE FOCUS
 bindsym $mod+Left focus left
@@ -88,10 +109,14 @@ bindsym $mod+Shift+2 move container to workspace $ws2
 bindsym $mod+Shift+3 move container to workspace $ws3
 bindsym $mod+Shift+4 move container to workspace $ws4
 bindsym $mod+Shift+5 move container to workspace $ws5
-
+bindgesture swipe:3:left workspace next
+bindgesture swipe:3:right workspace prev
 ### LAYOUTS
 bindsym $mod+f fullscreen toggle
-bindsym $mod+v splitv
+# splitv moved off $mod+v (was here) to make room for the clipboard picker,
+# below - v is the universal paste-adjacent key (Ctrl+V, Win+V) and that
+# convention wins over the split binding.
+bindsym $mod+n splitv
 bindsym $mod+Shift+b splith
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
@@ -113,6 +138,11 @@ bindsym $mod+Shift+d exec discord      # or any app
 # Searchable list of every bindsym in this file, grouped by section (requires wofi).
 bindsym $mod+h exec sh -c '/home/ravi/.config/sway/show_keybindings.sh'
 
+### CLIPBOARD HISTORY
+# cliphist itself already runs via the wl-paste --watch line in AUTOSTART -
+# this just browses it. Centered (keyboard-triggered, no button to align to).
+bindsym $mod+v exec sh -c '/home/ravi/.config/sway/clipboard-popup.sh'
+
 
 ### FLOATING
 bindsym $mod+Shift+space floating toggle
@@ -131,11 +161,21 @@ for_window [app_id="wofi"] floating enable, border pixel 0, sticky enable, move 
 for_window [app_id="kitty" title="btop"] floating enable, resize set 1100 700, move position center
 for_window [app_id="kitty" title="Calendar"] floating enable, resize set 520 400, move absolute position 1390 48
 
+# Rootlink draws its own rounded window chrome and shadow (Finder-style
+# floating window); a sway-drawn border/titlebar on top of that reads as a
+# double outline, so this strips sway's own decoration and lets the app's
+# QML chrome be the only frame.
+for_window [app_id="rootlink"] floating enable, border pixel 0, move position center
+
 
 ### AUDIO
-bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
-bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
-bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+# Each binding still does the real pactl change, then feeds the resulting
+# level to wob's FIFO for the on-screen bar (volume-osd.sh reads it back
+# from pactl rather than assuming the delta applied cleanly, since it's
+# already clamped at 0/100 either way).
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5% && /home/ravi/.config/sway/volume-osd.sh
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5% && /home/ravi/.config/sway/volume-osd.sh
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle && /home/ravi/.config/sway/volume-osd.sh
 
 ### BRIGHTNESS
 bindsym XF86MonBrightnessUp exec brightnessctl set +5%
